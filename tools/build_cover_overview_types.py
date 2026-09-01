@@ -39,13 +39,13 @@ def build_cover(wb):
     r = section(ws, r, COLS, "Document identity")
     r = headers(ws, r, ["Item", "Value"] + [""] * 8)
     for i, (a, b) in enumerate([
-        ("Source document", "eRAN  Carrier Aggregation Feature Parameter Description"),
+        ("Source document", "eRAN Carrier Aggregation FPD  +  eRAN LTE Spectrum Coordination FPD"),
         ("Product / version", "Huawei eRAN 21.1"),
-        ("Issue / date", "Issue 11  /  2026-06-30"),
+        ("Issue / date", "CA: Issue 11 / 2026-06-30     Spectrum Coordination: Issue 01 / 2025-03-10"),
         ("Applicable RAT", "LTE FDD and LTE TDD"),
-        ("Huawei feature family", "LAOFD / TDLAOFD / LEOFD / TDLEOFD / MRFD (see License sections)"),
+        ("Huawei feature family", "LAOFD / TDLAOFD / LEOFD / TDLEOFD / MRFD / LCOFD-131312 / TDLCOFD-131312"),
         ("Purpose of this workbook", "Deployment-oriented extract: principles, triggers, leaving, parameters, MML, counters, KPI, licenses"),
-        ("How to use", "Read sheets 1–2 for concepts. Deploy Step1 (2CC) first, then Step2–4. After CA is green, use sheet 7 for LTE Spectrum Coordination (UL/DL decoupling on the CA UE)."),
+        ("How to use", "Read sheets 1–2 for concepts. Deploy Step1 (2CC) first, then Step2–4. After CA is green, use sheet 7 (LTE Spectrum Coordination FPD) for UL-SINR PCell swap on CA UEs."),
     ]):
         r = table_row(ws, r, [a, b, "", "", "", "", "", "", "", ""], fills=[PALE_BLUE, WHITE] + [WHITE] * 8, bolds=[True] + [False] * 9, height=28)
         merge(ws, r - 1, 2, r - 1, COLS)
@@ -60,7 +60,7 @@ def build_cover(wb):
         ("4", "4. Step2 3CC Config", "Ch.6 Downlink 3CC", "Same structure as Step1; 3CC-specific switches / MML / KPI"),
         ("5", "5. Step3 4CC Config", "Ch.7 Downlink 4CC", "Same structure; 4CC switch + RLC timers"),
         ("6", "6. Step4 5CC Config", "Ch.8 Downlink 5CC", "Same structure; 5CC switch (license covered by 4CC+5CC)"),
-        ("7", "7. LTE Spectrum Coordination", "CA FPD Ch.23 item 55 + related FPDs (DSS, NSA, CellCaAlgoSwitch) + CloudAIR/Turkcell", "Last sheet: UL/DL decoupling on a CA UE — principle, UL-quality PCell trigger, leave, params, MML, counters, KPI, licenses"),
+        ("7", "7. LTE Spectrum Coordination", "LTE Spectrum Coordination FPD eRAN21.1 Issue 01 (2025-03-10), Ch.4 + Ch.5", "UL-SINR PCell swap on CA UEs: Figure 4-1, params, verbatim MML, UL-quality HO counters, LCOFD/TDLCOFD licenses, WBB/RRN enhancement"),
     ]
     for i, rec in enumerate(rows):
         vals = list(rec) + [""] * 6
@@ -73,7 +73,7 @@ def build_cover(wb):
         "Choose Adaptive mode (recommended) unless the cluster is a small fixed co-coverage CA group.",
         "Activate Downlink 2CC, verify counters and KPI, then add 3CC → 4CC → 5CC by turning on CaDl3CCSwitch / CaDl4CCSwitch / CaDl5CCSwitch.",
         "Do not skip 2CC: 3CC/4CC/5CC list Downlink 2CC (and 3CC/4CC as applicable) as prerequisite functions.",
-        "After CA is stable on a high/low (or TDD-high + FDD-low) pair, enable LTE Spectrum Coordination (sheet 7) so cell-edge UEs uplink on the coverage layer while DL stays aggregated. Dedicated FPD is CA ref 55 (not in this repo).",
+        "After CA is stable on a high/low pair, enable LTE Spectrum Coordination (sheet 7) from its FPD: HoAdmitSwitch off, HoWithSccCfgSwitch on, SpectrumCoordinationSwitch on; SpectrumCoordSinrThld=−2 in the doc MML. Verify L.HHO.InterFreq.ULquality.*.",
         "Huawei note: this FPD is activation guidance. Feature gains depend on the live scenario; contact Huawei service for optimization.",
     ], fill_hex=PALE_GREEN)
     ws.row_dimensions[r - 1].height = 110
