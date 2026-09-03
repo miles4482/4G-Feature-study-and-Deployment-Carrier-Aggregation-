@@ -101,7 +101,7 @@ def build_spectrum_coord(wb):
         ws, r, COLS,
         "Trigger is uplink SINR used in scheduling (initial MCS selection), compared with CaMgtCfg.SpectrumCoordSinrThld.  "
         "Doc optimization MML sets SpectrumCoordSinrThld = −2 on every original PCell.  "
-        "This is NOT CA event A1–A6 as the trigger (A4/A2 are used afterwards to pick the target SCell and to manage SCells)."
+        "This is NOT CA event A1–A6 as the trigger. After the SINR trigger, target SCell suitability uses PCellA4RsrpThd/PccA4RsrpThd; post-HO SCell leave uses CarrAggrA2ThdRsrp + SccA2Offset [+ SccA2RsrpThldExtendedOfs]."
     )
 
     r = formula_box(
@@ -119,7 +119,7 @@ def build_spectrum_coord(wb):
 
     r = subsection(ws, r, COLS, "B2.  Target-cell (new PCell) evaluation  —  a downlink SCell is suitable only if BOTH are true")
     r = bullets(ws, r, COLS, [
-        "Downlink signal strength of that SCell reaches the RSRP threshold for event A4  AND  is higher than all of its intra-frequency neighboring cells. If either fails, the SCell is not a target.",
+        "Downlink RSRP of that SCell reaches CaGroupCell.PCellA4RsrpThd (group) or PccFreqCfg.PccA4RsrpThd (adaptive)  AND  is higher than all of its intra-frequency neighboring cells. If either fails, the SCell is not a target. This is NOT CaMgtCfg.CarrAggrA4ThdRsrp (that is CA SCell-add A4).",
         "Recommendation (Ch.4.1): CaGroupCell.PCellA4RsrpThd (group) or PccFreqCfg.PccA4RsrpThd (adaptive)  >  InterFreqHoGroup.InterFreqHoA4ThdRsrp, to prevent a decrease in handover success rate.",
         "The SCell must also meet PCell conditions (see Carrier Aggregation FPD — this workbook Step1).",
         "If no downlink SCell meets the conditions: eNodeB does not initiate an inter-frequency handover.",
@@ -127,14 +127,14 @@ def build_spectrum_coord(wb):
         "If two or more candidates: selection rules in B3.",
         "After HO: original SCell becomes PCell; original PCell becomes SCell. In adaptive CA (not group-based), carrier management (section C) then runs.",
     ])
-    ws.row_dimensions[r - 1].height = 130
+    ws.row_dimensions[r - 1].height = 155
 
     r = formula_box(
         ws, r, COLS,
-        "B2 worked example  —  is this SCell a legal SC target?  (A4 + strongest intra-freq)",
-        "SCell is suitable iff  (SCell RSRP reaches CA event A4)  AND  (SCell RSRP > every intra-frequency neighbor of that SCell).\n"
-        "CA A4 entering (this workbook / CA FPD Ch.4.3):  Mn + Ofn + Ocn − Hys  >  Thresh\n"
-        "Thresh = CarrAggrA4ThdRsrp + SCellA4Offset/SccA4Offset  (offsets 0 in the CA FPD MML examples).",
+        "B2 worked example  —  is this SCell a legal SC target?  (PCellA4RsrpThd/PccA4RsrpThd + strongest intra-freq)",
+        "SCell is suitable iff  (SCell RSRP reaches CaGroupCell.PCellA4RsrpThd [group] or PccFreqCfg.PccA4RsrpThd [adaptive])  AND  (SCell RSRP > every intra-frequency neighbor of that SCell).\n"
+        "Keep PCellA4RsrpThd/PccA4RsrpThd > InterFreqHoGroup.InterFreqHoA4ThdRsrp so SC HO does not steal coverage HO.\n"
+        "CA SCell-add A4 (used later for carrier management) is separate: CaMgtCfg.CarrAggrA4ThdRsrp + CaGroupSCellCfg.SCellA4Offset (group) or SccFreqCfg.SccA4Offset (adaptive).",
         "Assume adaptive CA, PccA4RsrpThd = −105 dBm (CA FPD MML), offsets = 0, Hys = 1 dB.\n"
         "Low-frequency SCell Mn = −98 dBm, Ofn=Ocn=0.  Mn+Ofn+Ocn−Hys = −99 dB.  −99 > −105 → A4 TRUE.\n"
         "Strongest intra-freq neighbor of that SCell = −108 dBm.  SCell −98 > −108 → strongest TRUE.",
@@ -142,25 +142,25 @@ def build_spectrum_coord(wb):
     )
 
     r = subsection(ws, r, COLS, "B3.  Choosing among multiple candidate SCells  (Ch.4.1)")
-    r = headers(ws, r, ["Order", "Intelligent selection OFF (CaSmartSelectionSwitch)", "Intelligent selection ON"] + [""] * 7)
+    r = headers(ws, r, ["Order", "CaSmartSelectionSwitch OFF", "CaSmartSelectionSwitch ON"] + [""] * 7)
     sel = [
-        ("1", "Highest PCell priority (CaGroupCell.PreferredPCellPriority) or PCC priority (PccFreqCfg.PreferredPccPriority)",
-         "Highest downlink air interface capability (see CA FPD)"),
-        ("2", "If still tied: largest bandwidth",
-         "If still tied: highest PCell / PCC priority (same MOs as left)"),
-        ("3", "If still tied: lowest center frequency",
-         "If still tied: larger bandwidth; then lowest center frequency"),
+        ("1", "Highest CaGroupCell.PreferredPCellPriority (group) or PccFreqCfg.PreferredPccPriority (adaptive)",
+         "Highest DL air interface capability (CA FPD Ch.12). CaMgtCfg.MinDlAvgToBeScheduledUeNum=0 → P×SF×SE−G; else (P×SF×SE−G)/N. P=L.ChMeas.PRB.DL.Avail, SF=CellMLB.CellCapacityScaleFactor, G=GBR BW, SE=spectral efficiency, N=active UEs (floor=MinDlAvgToBeScheduledUeNum)"),
+        ("2", "If still tied: largest cell bandwidth",
+         "If still tied: highest PreferredPCellPriority / PreferredPccPriority"),
+        ("3", "If still tied: lowest center frequency (EARFCN)",
+         "If still tied: larger bandwidth, then lowest EARFCN"),
     ]
     for i, rec in enumerate(sel):
         vals = list(rec) + [""] * 7
-        r = table_row(ws, r, vals, fills=[alt_fill(i)] * 10, height=40)
+        r = table_row(ws, r, vals, fills=[alt_fill(i)] * 10, height=56)
         merge(ws, r - 1, 3, r - 1, COLS)
 
     r = subsection(ws, r, COLS, "B4.  Worked multi-candidate example  (doc selection rules + 3CC MML EARFCNs)")
     r = body(
         ws, r, COLS,
-        "Doc 3CC optimization MML uses three downlink EARFCNs 123 / 567 / 890 as PCC/SCC pairs. Sample (intelligent selection OFF):\n"
-        "UE PCell = high-frequency cell on EARFCN 890, UL SINR = −3 dB < −2 dB → SC starts. Two DL SCells both pass A4+strongest:\n"
+        "Doc 3CC optimization MML uses three downlink EARFCNs 123 / 567 / 890 as PCC/SCC pairs. Sample (ENodeBAlgoSwitch.CaAlgoSwitch / CaSmartSelectionSwitch OFF):\n"
+        "UE PCell = high-frequency cell on EARFCN 890, UL SINR = −3 dB < −2 dB → SC starts. Two DL SCells both pass PCellA4RsrpThd/PccA4RsrpThd + strongest:\n"
         "  Cell A  EARFCN 123, PreferredPccPriority=2, BW=10 MHz\n"
         "  Cell B  EARFCN 567, PreferredPccPriority=2, BW=20 MHz\n"
         "Same PCC priority → pick largest bandwidth → Cell B. After HO: PCell = Cell B, original 890-cell becomes SCell. "
@@ -180,24 +180,24 @@ def build_spectrum_coord(wb):
 
     r = formula_box(
         ws, r, COLS,
-        "C2.  SccA2RsrpThldExtendedOfs ≠ 0  and intelligent selection ON  (Ch.4.1 steps i–iv)",
+        "C2.  SccA2RsrpThldExtendedOfs ≠ 0  and CaSmartSelectionSwitch ON  (Ch.4.1 steps i–iv)",
         "First A2 threshold  =  CarrAggrA2ThdRsrp + SccA2Offset\n"
         "On first A2: evaluate a NEW A2 entering condition with\n"
         "    New A2 threshold  =  CarrAggrA2ThdRsrp + SccA2Offset + SccA2RsrpThldExtendedOfs\n"
         "If RSRP meets the new condition → remove SCell (end).\n"
         "If not → delete previous A2 cfg; deliver new A2 cfg + A1 cfg for this SCell.\n"
         "    A1 threshold  =  CarrAggrA4ThdRsrp + SccA4Offset\n"
-        "Before further A2/A1, intelligent selection may pick a better SCell.\n"
+        "Before further A2/A1, CaSmartSelectionSwitch may pick a better SCell using the Ch.12 DL air interface capability formula (MinDlAvgToBeScheduledUeNum).\n"
         "Further A2 containing this SCell → remove it.  A1 containing this SCell → release new A2, restore previous A2 (threshold back to CarrAggrA2ThdRsrp + SccA2Offset).",
         "Doc MML: SccA2RsrpThldExtendedOfs = −10. Assume CarrAggrA2ThdRsrp = −115 dBm, SccA2Offset = 0, CarrAggrA4ThdRsrp = −105, SccA4Offset = 0 (CA-style numbers; A2/A4 bases are CA FPD).\n"
         "First A2 thresh = −115 dBm. New A2 thresh = −115 + 0 + (−10) = −125 dBm.\n"
         "SCell RSRP in the report = −118 dBm.\n"
         "−118 meets first A2 (below −115) but does NOT meet new A2 (need to be below −125).",
-        "SCell is NOT removed on the first A2. eNodeB switches to the extended A2 + A1 pair (A1 thresh = −105 dBm) and intelligent selection may replace the SCell. "
+        "SCell is NOT removed on the first A2. eNodeB switches to the extended A2 + A1 pair (A1 thresh = CarrAggrA4ThdRsrp + SccA4Offset = −105 dBm) and CaSmartSelectionSwitch may replace the SCell. "
         "If a later A2 still contains this SCell, it is removed."
     )
 
-    r = subsection(ws, r, COLS, "C3.  SccA2RsrpThldExtendedOfs ≠ 0  and intelligent selection OFF")
+    r = subsection(ws, r, COLS, "C3.  SccA2RsrpThldExtendedOfs ≠ 0  and CaSmartSelectionSwitch OFF")
     r = formula_box(
         ws, r, COLS,
         "Single A2 threshold (no two-step A1)",
@@ -343,11 +343,11 @@ def build_spectrum_coord(wb):
                   "Related to SC target evaluation, not the UL-SINR trigger.", related=True)
     r = add_param(ws, r, 11, "CaGroupCell / PccFreqCfg", "PreferredPCellPriority / PreferredPccPriority",
                   "See Parameter Reference", "Plan so the preferred low-frequency coverage cell wins when UL SINR is poor",
-                  "First tie-break among multiple SC target SCells when intelligent selection is OFF (and second tie-break when ON).",
+                  "First tie-break among multiple SC target SCells when CaSmartSelectionSwitch is OFF (and second tie-break when ON).",
                   "Then largest bandwidth, then lowest center frequency.", related=True)
     r = add_param(ws, r, 12, "ENodeBAlgoSwitch", "CaAlgoSwitch / CaSmartSelectionSwitch",
                   "See Parameter Reference", "Site — changes target-cell and A2-extended procedures",
-                  "Intelligent selection of serving cell combinations. Changes B3 selection order and C2 vs C3 A2 handling.",
+                  "ENodeBAlgoSwitch.CaAlgoSwitch bit CaSmartSelectionSwitch. ON: first pick among SC targets is highest DL air interface capability (CaMgtCfg.MinDlAvgToBeScheduledUeNum formula). OFF: first pick is PreferredPCellPriority/PreferredPccPriority. Also changes C2 vs C3 A2 handling.",
                   "See this workbook sheet 2.", related=True)
     r = add_param(ws, r, 13, "CaMgtCfg", "CellCaAlgoSwitch / WbbCaMultiCarrierCoordSw",
                   "See Parameter Reference", "Select on low- and high-frequency cells for enhancement (Table 5-9)",
@@ -575,7 +575,12 @@ def build_spectrum_coord(wb):
         ("Q1. Is the low-band SCell already configured with this PCell?",
          "YES. The FPD starts from a UE already in the CA state. The eNodeB only looks at that UE’s existing downlink SCells — it does not add a new neighbor from outside CA at this step. Example in Figure 4-1: before the swap, PCell is already 2600 MHz and SCell is already 850 MHz."),
         ("Q2. If the UE has several SCells, which one becomes the new PCell?",
-         "Only SCells that pass ALL of: (a) better uplink than the current PCell, (b) DL RSRP reaches CA event A4, (c) stronger than all intra-frequency neighbors of that SCell, (d) allowed to be a PCell. If only one SCell passes → HO to that one. If two or more pass → pick by rule: highest PCell/PCC priority, then largest bandwidth, then lowest EARFCN. If intelligent selection is ON, DL air-interface capability is used first, then the same ties. UL SCells are never chosen as the target."),
+         "Only existing DL SCells that pass ALL of: (a) better uplink than the current PCell; (b) DL RSRP reaches CaGroupCell.PCellA4RsrpThd (group) or PccFreqCfg.PccA4RsrpThd (adaptive) — keep this > InterFreqHoGroup.InterFreqHoA4ThdRsrp; do not confuse with CA SCell-add CaMgtCfg.CarrAggrA4ThdRsrp; (c) stronger than all intra-frequency neighbors of that SCell; (d) allowed to be a PCell. UL SCells are never the target (CaMgtCfg.CellCaAlgoSwitch / CaUl2CCSwitch UEs with UL2CC+DL2CC are excluded).\n"
+         "One candidate → HO to it. Several candidates → see next row for the pick order."),
+        ("How the eNodeB picks among several legal SCells",
+         "Switch: ENodeBAlgoSwitch.CaAlgoSwitch → CaSmartSelectionSwitch.\n"
+         "OFF: 1) highest CaGroupCell.PreferredPCellPriority (group) or PccFreqCfg.PreferredPccPriority (adaptive)  2) largest cell bandwidth  3) lowest center frequency (EARFCN).\n"
+         "ON: 1) highest downlink air interface capability of the cell, from CA FPD Ch.12: if CaMgtCfg.MinDlAvgToBeScheduledUeNum=0 then P×SF×SE−G, else (P×SF×SE−G)/N. P = L.ChMeas.PRB.DL.Avail; SF = CellMLB.CellCapacityScaleFactor; G = GBR bandwidth in the cell; SE = cell spectral efficiency; N = active UEs (floor = MinDlAvgToBeScheduledUeNum).  2) same PreferredPCellPriority / PreferredPccPriority  3) larger bandwidth  4) lowest EARFCN."),
         ("What “DL still uses both bands, UL rides the coverage layer” means",
          "Coverage layer = low frequency (better uplink reach). Capacity layer = high frequency (more downlink speed, weaker uplink at the edge).\n"
          "In normal LTE CA without UL CA, upload (PUSCH/PUCCH) is only on the PCell. Download can use PCell + SCell.\n"
@@ -585,7 +590,7 @@ def build_spectrum_coord(wb):
         ("Benefit (1–2 lines)",
          "It lifts DL usage of CA UEs at the high-frequency UL coverage edge. Best when high/low gap is large. Scenario 1 (both bands already on): PUSCH MCS 0–3 >10% on high band, low-minus-high UL interference <5 dB, CA UE penetration >25% → network User DL Average Throughput up. Scenario 2 (adding a new low band under an existing high band) → both User DL and User UL Average Throughput up."),
         ("Trigger",
-         "CA UE already aggregating. UL SINR used in scheduling (initial MCS) < SpectrumCoordSinrThld (doc MML −2 dB). Then a DL SCell must pass A4 AND be stronger than all its intra-freq neighbours, and must be allowed as PCell. Target pick: PCell/PCC priority → largest BW → lowest EARFCN (or DL air-interface capability first if intelligent selection is ON)."),
+         "CA UE already aggregating. UL SINR used in scheduling (initial MCS) < CaMgtCfg.SpectrumCoordSinrThld (doc MML −2 dB). Then a DL SCell must reach CaGroupCell.PCellA4RsrpThd (group) or PccFreqCfg.PccA4RsrpThd (adaptive), AND be stronger than all intra-freq neighbours, AND be allowed as PCell. Recommend PCellA4RsrpThd/PccA4RsrpThd > InterFreqHoGroup.InterFreqHoA4ThdRsrp. Target pick: if ENodeBAlgoSwitch.CaAlgoSwitch / CaSmartSelectionSwitch OFF → CaGroupCell.PreferredPCellPriority or PccFreqCfg.PreferredPccPriority → largest BW → lowest EARFCN. If CaSmartSelectionSwitch ON → highest DL air interface capability first (CaMgtCfg.MinDlAvgToBeScheduledUeNum=0 → P×SF×SE−G else (P×SF×SE−G)/N; P=L.ChMeas.PRB.DL.Avail, SF=CellMLB.CellCapacityScaleFactor), then the same ties."),
         ("Leave / after HO",
          "After HO, original SCell = new PCell and original PCell = SCell. In adaptive CA, SCell A2 then manages the old high band (SccA2RsrpThldExtendedOfs; doc −10). Operator off: SpectrumCoordinationSwitch-0. Not a coverage HO; extra HOs raise count, can cut DRX UEs and may drop VoLTE MOS."),
         ("Must-on conditions",
@@ -613,6 +618,6 @@ def build_spectrum_coord(wb):
         r = table_row(ws, r, [topic, text] + [""] * 8,
                       fills=[PALE_GOLD, EXAMPLE if i % 2 == 0 else WHITE] + [WHITE] * 8,
                       bolds=[True, False] + [False] * 8,
-                      height=max(52, min(168, 28 + 18 * (text.count("\n") + 1))))
+                      height=max(52, min(180, 28 + 14 * (text.count("\n") + 1) + len(text) // 90 * 10)))
         merge(ws, r - 1, 2, r - 1, COLS)
     return ws

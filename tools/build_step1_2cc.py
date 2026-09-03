@@ -453,7 +453,7 @@ def build_2cc(wb):
     r = subsection(ws, r, COLS, "E4.  Common CaMgtCfg carrier-management parameters  (add / leave / activate / deactivate)")
     r = add_param_header(ws, r)
     r = add_param(ws, r, 47, "CaMgtCfg", "CarrAggrA4ThdRsrp", "See Parameter Reference", "Set > CarrAggrA2ThdRsrp; typical same order as −105 (doc A4 examples)",
-                  "Base RSRP threshold for CA event A4 (SCell add).",
+                  "Base RSRP threshold for CA SCell-add event A4 (CaMgtCfg.CarrAggrA4ThdRsrp). Not the SC/PCC-anchor A4 (PCellA4RsrpThd/PccA4RsrpThd) and not coverage HO A4 (InterFreqHoA4ThdRsrp).",
                   "MUST be greater than CarrAggrA2ThdRsrp. Children: SCellA4Offset, SccA4Offset.", related=True)
     r = add_param(ws, r, 48, "CaMgtCfg", "CaA4TimeToTrigger", "See Parameter Reference", "Site (balance speed vs ping-pong)",
                   "Time-to-trigger for CA A4.", "Larger → fewer A4 reports.")

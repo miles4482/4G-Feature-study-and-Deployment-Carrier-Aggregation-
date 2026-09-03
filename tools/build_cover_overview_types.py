@@ -187,13 +187,13 @@ def build_overview(wb):
         ("A1", "PCell quality exceeds a threshold", "Ms − Hys > Thresh   throughout TimeToTrig", "Start PCC anchoring (after UE camps on a non-highest-priority PCC)"),
         ("A2", "PCell / SCell quality drops below a threshold", "Ms + Hys < Thresh   throughout TimeToTrig", "SCell removal (CA A2). Also HO-related A2 can allow SCell config (RcvA2CfgSccSwitch)"),
         ("A3", "Neighbor better than PCell by an offset", "Mn+Ofn+Ocn−Hys > Ms+Ofs+Ocs+Off", "Connected-mode mobility (not CA-specific)"),
-        ("A4", "Inter-frequency neighbor exceeds a threshold", "Mn+Ofn+Ocn−Hys > Thresh", "SCell add (measurement-based). Threshold = CarrAggrA4ThdRsrp + SCell/SCC A4 offset [+ extended Ofs]"),
+        ("A4", "Inter-frequency neighbor exceeds a threshold", "Mn+Ofn+Ocn−Hys > Thresh", "Three different A4 MOs: (1) CA SCell-add = CaMgtCfg.CarrAggrA4ThdRsrp + CaGroupSCellCfg.SCellA4Offset or SccFreqCfg.SccA4Offset [+ SccA2RsrpThldExtendedOfs]; (2) SC/PCC-anchor target = CaGroupCell.PCellA4RsrpThd or PccFreqCfg.PccA4RsrpThd; (3) coverage HO = InterFreqHoGroup.InterFreqHoA4ThdRsrp"),
         ("A5", "PCell below Thresh1 AND neighbor above Thresh2", "(Ms+Hys<Thresh1) AND (Mn+Ofn+Ocn−Hys>Thresh2)", "PCC anchoring inter-freq measurement. Thresh1 is always −43 dBm / −3 dB. Thresh2 = PCellA4RsrpThd or PccA4RsrpThd"),
         ("A6", "Intra-frequency neighbor of SCell better than SCell", "Mn+Ocn−Hys > Ms+Ocs+Off   (Hys always 1 dB)", "SCell change, PCell unchanged. Off = CaMgtCfg.CarrAggrA6Offset"),
     ]
     for i, rec in enumerate(ev):
         vals = list(rec) + [""] * 6
-        r = table_row(ws, r, vals, fills=[alt_fill(i)] * 10, height=42)
+        r = table_row(ws, r, vals, fills=[alt_fill(i)] * 10, height=56)
         merge(ws, r - 1, 4, r - 1, COLS)
     r = note_bar(ws, r, COLS,
                  "Recommendation (Ch.4.3): select both CaA5HoEventSwitch and CaA5HoEventEnhSwitch on ENodeBAlgoSwitch so that event A4 is changed to A5 when SCells exist. "
@@ -229,16 +229,16 @@ def build_types(wb):
     r = headers(ws, r, ["Item", "CA-group-based", "Adaptive (recommended)", "Flexible CA", "Intelligent selection"] + [""] * 5)
     cmp_rows = [
         ("How enabled", "Deselect FreqCfgSwitch on ENodeBAlgoSwitch.CaAlgoSwitch", "Select FreqCfgSwitch AND AdpCaSwitch", "Group: license only. Adaptive: MultiCarrierFlexCaSwitch on CaMgtCfg.CellCaAlgoSwitch", "CaSmartSelectionSwitch on ENodeBAlgoSwitch.CaAlgoSwitch"),
-        ("What you define", "CaGroup of cells (max 9 per group: FDD / TDD / FDDTDD)", "PccFreqCfg + SccFreqCfg frequencies", "Larger candidate SCC set; pick 1–7 SCCs (up to 8 inter-freq carriers)", "Best DL 2–5 / UL 2 combination from load, coverage, UE capability"),
+        ("What you define", "CaGroup of cells (max 9 per group: FDD / TDD / FDDTDD)", "PccFreqCfg + SccFreqCfg frequencies", "Larger candidate SCC set; pick 1–7 SCCs (up to 8 inter-freq carriers)", "CaSmartSelectionSwitch ON: first use highest DL air interface capability (CaMgtCfg.MinDlAvgToBeScheduledUeNum: P×SF×SE−G or (P×SF×SE−G)/N)"),
         ("Who can aggregate", "Only cells inside the same CA group", "Only cells on the configured PCC/SCC frequencies", "From the candidate pool, prefer the combination with the largest number of CCs", "Selected combination, not a static pair"),
-        ("Blind SCell", "SccBlindCfgSwitch + CaGroupSCellCfg.SCellBlindCfgFlag=TRUE", "CaGroupSCellCfg.SCellBlindCfgFlag=TRUE (one blind SCell per SCC frequency)", "Can combine with SmartCaFastSccCfgSwitch", "SmartCaFastSccCfgSwitch tries blind add during intelligent selection"),
+        ("Blind SCell", "SccBlindCfgSwitch + CaGroupSCellCfg.SCellBlindCfgFlag=TRUE", "CaGroupSCellCfg.SCellBlindCfgFlag=TRUE (one blind SCell per SCC frequency)", "Can combine with SmartCaFastSccCfgSwitch", "SmartCaFastSccCfgSwitch tries blind add while CaSmartSelectionSwitch is ON"),
         ("Route / capacity", "Static CaGroupSCellCfg. Max 1152 MOs / eNB", "Static + dynamic routes. 8 / 24 / 48 neighbors per cell depending on Dl2CCAckResShareSw and CaRouteNumberExtensionSwitch. PCC+SCC freqs ≤ 17.", "Same as parent mode", "If ON, max 9 PCC frequencies (else 16)"),
         ("License character", "Each cell in a ≥2-inter-freq group consumes LTE-A Introduction", "Each PCC-freq cell + participating SCC-freq cell consumes LTE-A Introduction", "Per cell when ≥3 inter-freq cells (group) or when switch ON (adaptive)", "Separate feature; see Ch.12"),
         ("When to use", "Small, fixed, co-coverage cluster; simple ops", "Multi-band / multi-site, overlapping coverage, growth. Huawei recommended.", "More than 2 candidate carriers; want max CC count", "Need load-aware serving-cell mix (DL and UL)"),
     ]
     for i, rec in enumerate(cmp_rows):
         vals = list(rec) + [""] * 5
-        r = table_row(ws, r, vals, fills=[alt_fill(i)] * 10, height=52)
+        r = table_row(ws, r, vals, fills=[alt_fill(i)] * 10, height=64)
         merge(ws, r - 1, 5, r - 1, COLS)
 
     r = blank(ws, r)
@@ -280,9 +280,10 @@ def build_types(wb):
     r = body(ws, r, COLS,
              "Ch.12: the eNodeB selects DL combinations (2–5 CC) and UL combinations (2 CC) using triggers (traffic / measurement), "
              "UE capability, coverage overlap and load — rather than a static priority list alone. "
-             "Requires CaSmartSelectionSwitch. When this switch is ON, PCC frequency count is capped at 9. "
+             "Switch: ENodeBAlgoSwitch.CaAlgoSwitch / CaSmartSelectionSwitch. When ON, PCC frequency count is capped at 9, and the first pick among candidate serving cells is highest downlink air interface capability: if CaMgtCfg.MinDlAvgToBeScheduledUeNum=0 then P×SF×SE−G, else (P×SF×SE−G)/N (P=L.ChMeas.PRB.DL.Avail, SF=CellMLB.CellCapacityScaleFactor, G=GBR bandwidth, SE=spectral efficiency, N=active UEs with floor=MinDlAvgToBeScheduledUeNum). Then PreferredPCellPriority/PreferredPccPriority, bandwidth, EARFCN. "
              "SmartCaFastSccCfgSwitch (CaAlgoExtSwitch) can try blind SCell configuration to shorten time-to-CA; it requires CaSmartSelectionSwitch ON. "
-             "Does not take effect together with some PCC-anchoring enhancements (e.g. UlCaCapbBasedPccSelectionSw).")
+             "Does not take effect together with some PCC-anchoring enhancements (e.g. UlCaCapbBasedPccSelectionSw).",
+             height=110)
 
     r = section(ws, r, COLS, "2.6  Carrier-management state machine  (common to every type)")
     r = bullets(ws, r, COLS, [
