@@ -28,7 +28,7 @@ def build_spectrum_coord(wb):
         ws, r, COLS,
         SRC + ".  Applies to FDD/TDD (no FDD↔TDD principle difference, §2.4).  "
         "MML, counter IDs, license models, and Figure 4-1 are taken from this FPD.  "
-        "Doc example uses downlink 3CC (LocalCellId=0/1/2).  "
+        "Cell-level MML in this sheet uses LocalCellId=1 only (repeat on the partner cell in live network).  "
         "Where the FPD does not print a factory default, Default = “See Parameter Reference”; Recommended = Table 4-1/4-2 setting or the MML sample."
     )
 
@@ -111,7 +111,7 @@ def build_spectrum_coord(wb):
         "    (uplink SINR used in scheduling)  <  CaMgtCfg.SpectrumCoordSinrThld\n"
         "the inter-frequency handover and carrier-management procedures of Ch.4.1 start.\n"
         "SINR is the one used for initial MCS selection (Uplink Scheduling FPD).",
-        "Doc MML: MOD CAMGTCFG: LocalCellId=0/1/2, SpectrumCoordSinrThld=-2;\n"
+        "Doc MML (this sheet: LocalCellId=1): MOD CAMGTCFG: LocalCellId=1, SpectrumCoordSinrThld=-2;\n"
         "Sample UE at high-frequency PCell: UL SINR used in scheduling = −3 dB, threshold = −2 dB.\n"
         "Compare: −3 < −2  → TRUE.",
         "LTE Spectrum Coordination evaluation STARTS. If UL SINR = 0 dB: 0 < −2 is FALSE → no SC handover from this trigger."
@@ -210,8 +210,8 @@ def build_spectrum_coord(wb):
 
     r = subsection(ws, r, COLS, "C4.  Operator rollback  (Ch.4.4.1.2 Deactivation MML)")
     r = body(ws, r, COLS,
-             "MOD CAMGTCFG: LocalCellId=0/1/2, CellCaAlgoSwitch=SpectrumCoordinationSwitch-0;  "
-             "stops UL-SINR-triggered PCell swaps. CA itself is unchanged. Doc example is the 3CC set of three cells.")
+             "MOD CAMGTCFG: LocalCellId=1, CellCaAlgoSwitch=SpectrumCoordinationSwitch-0;  "
+             "stops UL-SINR-triggered PCell swaps. CA itself is unchanged. Repeat on every participating cell in live network.")
 
     r = subsection(ws, r, COLS, "C5.  Network impacts of the extra HOs  (Ch.4.2.2)")
     r = bullets(ws, r, COLS, [
@@ -304,7 +304,7 @@ def build_spectrum_coord(wb):
     r = add_param(ws, r, 1, "CaMgtCfg", "CellCaAlgoSwitch / SpectrumCoordinationSwitch",
                   "See Parameter Reference", "Select on original PCells and SCells (Table 4-1)",
                   "Master enable for LTE Spectrum Coordination. Function is enabled only when this bit, HoWithSccCfgSwitch, and HoAdmitSwitch-deselected are all met.",
-                  "Doc MML: CellCaAlgoSwitch=SpectrumCoordinationSwitch-1 on LocalCellId=0,1,2 (3CC example).")
+                  "Doc MML in this sheet: CellCaAlgoSwitch=SpectrumCoordinationSwitch-1 on LocalCellId=1.")
     r = add_param(ws, r, 2, "CaMgtCfg", "SpectrumCoordSinrThld",
                   "See Parameter Reference", "−2 (doc optimization MML, original PCells)",
                   "Uplink SINR threshold used in scheduling (initial MCS selection). When UL SINR of the uplink serving cell falls below this, SC inter-frequency HO + carrier management start.",
@@ -324,7 +324,7 @@ def build_spectrum_coord(wb):
     r = add_param(ws, r, 6, "CellAlgoSwitch", "PucchAlgoSwitch / Dl2CCAckResShareSw",
                   "See Parameter Reference", "Select on original PCells and SCells (Table 4-1)",
                   "PUCCH ACK resource sharing. Paired with CaEnhancedPreAllocSwitch as above.",
-                  "Doc MML on LocalCellId=0,1,2.", related=True)
+                  "Doc MML in this sheet: LocalCellId=1.", related=True)
     r = add_param(ws, r, 7, "CellMlbHo", "MlbMatchOtherFeatureMode / HoAdmitSwitch",
                   "See Parameter Reference", "Deselect on original PCells and SCells (Table 4-1)",
                   "Admission control of MLB triggering over unnecessary handovers. Mutually exclusive with SC — must be off.",
@@ -367,103 +367,49 @@ def build_spectrum_coord(wb):
                   "Related: NSA_PCC_ANCHORING_SWITCH (takes precedence over enhancement).", related=True)
 
     # ------------------------------------------------------------------ F
-    r = section(ws, r, COLS, "F.  MML  (verbatim from Ch.4.4.1.2 and Ch.5.4.1.2)")
-    r = note_bar(ws, r, COLS, "Ch.4 example is downlink 3CC (LocalCellId=0,1,2; EARFCN 123/567/890). Ch.5 example: low-frequency LocalCellId=0 as MBBSERCELL, EARFCN 123 PCC + 456 SCC. Replace IDs with live-network values.")
+    r = section(ws, r, COLS, "F.  MML  (from Ch.4.4.1.2 and Ch.5.4.1.2  —  LocalCellId=1 only)")
+    r = note_bar(ws, r, COLS, "FPD sample used three cells (0/1/2). This sheet keeps one cell: LocalCellId=1. Repeat the same cell-level command on every participating high/low cell in the live network. eNodeB-level commands have no LocalCellId. EARFCN 123/567 are FPD examples — replace with live EARFCNs.")
     r = add_mml_header(ws, r)
     mmls = [
         (1, "1", "Both", "FDD/TDD", "Activate SC",
-         "MOD CELLMLBHO: LocalCellId=0, MlbMatchOtherFeatureMode=HoAdmitSwitch-0;",
-         "Doc: Enabling LTE spectrum coordination (taking downlink 3CC as an example). Repeat 0,1,2."),
-        (2, "2", "Both", "FDD/TDD", "Activate SC",
          "MOD CELLMLBHO: LocalCellId=1, MlbMatchOtherFeatureMode=HoAdmitSwitch-0;",
-         "Original PCell/SCell set."),
-        (3, "3", "Both", "FDD/TDD", "Activate SC",
-         "MOD CELLMLBHO: LocalCellId=2, MlbMatchOtherFeatureMode=HoAdmitSwitch-0;",
-         "Original PCell/SCell set."),
-        (4, "4", "Both", "FDD/TDD", "Activate SC",
-         "MOD CELLALGOSWITCH: LocalCellId=0, PucchAlgoSwitch=Dl2CCAckResShareSw-1;",
-         "Prevents low-frequency traffic increase (with CaEnhancedPreAllocSwitch)."),
-        (5, "5", "Both", "FDD/TDD", "Activate SC",
+         "Deselect MLB unnecessary-HO admission on the cell (original PCell/SCell). Repeat on partner cell in live network."),
+        (2, "2", "Both", "FDD/TDD", "Activate SC",
          "MOD CELLALGOSWITCH: LocalCellId=1, PucchAlgoSwitch=Dl2CCAckResShareSw-1;",
-         ""),
-        (6, "6", "Both", "FDD/TDD", "Activate SC",
-         "MOD CELLALGOSWITCH: LocalCellId=2, PucchAlgoSwitch=Dl2CCAckResShareSw-1;",
-         ""),
-        (7, "7", "Both", "FDD/TDD", "Activate SC",
+         "With CaEnhancedPreAllocSwitch, prevents low-frequency cell traffic from increasing."),
+        (3, "3", "Both", "FDD/TDD", "Activate SC",
          "MOD ENODEBALGOSWITCH: CaAlgoSwitch=HoWithSccCfgSwitch-1&SccA2RmvSwitch-1, CaAlgoExtSwitch=CaEnhancedPreAllocSwitch-1;",
-         "Doc single eNodeB-level command (HO-with-SCell + A2 remove + enhanced pre-alloc)."),
-        (8, "8", "Both", "FDD/TDD", "Activate SC",
-         "MOD CAMGTCFG: LocalCellId=0, CellCaAlgoSwitch=SpectrumCoordinationSwitch-1;",
-         "Master bit on each of the three cells."),
-        (9, "9", "Both", "FDD/TDD", "Activate SC",
+         "eNodeB-level (no LocalCellId): SCell-during-HO + A2 remove + enhanced pre-alloc."),
+        (4, "4", "Both", "FDD/TDD", "Activate SC",
          "MOD CAMGTCFG: LocalCellId=1, CellCaAlgoSwitch=SpectrumCoordinationSwitch-1;",
-         ""),
-        (10, "10", "Both", "FDD/TDD", "Activate SC",
-         "MOD CAMGTCFG: LocalCellId=2, CellCaAlgoSwitch=SpectrumCoordinationSwitch-1;",
-         ""),
-        (11, "11", "Both", "FDD/TDD", "Optimize SC",
-         "MOD CAMGTCFG: LocalCellId=0, SpectrumCoordSinrThld=-2;",
-         "Doc: Setting the SINR threshold (3CC example). Repeat 0,1,2."),
-        (12, "12", "Both", "FDD/TDD", "Optimize SC",
+         "Master switch. Repeat on every participating cell."),
+        (5, "5", "Both", "FDD/TDD", "Optimize SC",
          "MOD CAMGTCFG: LocalCellId=1, SpectrumCoordSinrThld=-2;",
-         ""),
-        (13, "13", "Both", "FDD/TDD", "Optimize SC",
-         "MOD CAMGTCFG: LocalCellId=2, SpectrumCoordSinrThld=-2;",
-         ""),
-        (14, "14", "Adaptive", "FDD/TDD", "Optimize SC",
+         "Doc recommended SINR threshold on original PCells."),
+        (6, "6", "Adaptive", "FDD/TDD", "Optimize SC",
          "MOD SCCFREQCFG: PccDlEarfcn=123, SccDlEarfcn=567, SccA2RsrpThldExtendedOfs=-10;",
-         "Doc: extended A2 offset on every PCC↔SCC pair of {123,567,890}."),
-        (15, "15", "Adaptive", "FDD/TDD", "Optimize SC",
-         "MOD SCCFREQCFG: PccDlEarfcn=123, SccDlEarfcn=890, SccA2RsrpThldExtendedOfs=-10;",
-         ""),
-        (16, "16", "Adaptive", "FDD/TDD", "Optimize SC",
-         "MOD SCCFREQCFG: PccDlEarfcn=567, SccDlEarfcn=123, SccA2RsrpThldExtendedOfs=-10;",
-         ""),
-        (17, "17", "Adaptive", "FDD/TDD", "Optimize SC",
-         "MOD SCCFREQCFG: PccDlEarfcn=567, SccDlEarfcn=890, SccA2RsrpThldExtendedOfs=-10;",
-         ""),
-        (18, "18", "Adaptive", "FDD/TDD", "Optimize SC",
-         "MOD SCCFREQCFG: PccDlEarfcn=890, SccDlEarfcn=123, SccA2RsrpThldExtendedOfs=-10;",
-         ""),
-        (19, "19", "Adaptive", "FDD/TDD", "Optimize SC",
-         "MOD SCCFREQCFG: PccDlEarfcn=890, SccDlEarfcn=567, SccA2RsrpThldExtendedOfs=-10;",
-         ""),
-        (20, "20", "Both", "FDD/TDD", "Deactivate SC",
-         "MOD CAMGTCFG: LocalCellId=0, CellCaAlgoSwitch=SpectrumCoordinationSwitch-0;",
-         "Doc deactivation (3CC). Repeat 1 and 2."),
-        (21, "21", "Both", "FDD/TDD", "Deactivate SC",
+         "Doc A2 extended offset. One PCC↔SCC pair shown; apply to each live pair."),
+        (7, "7", "Both", "FDD/TDD", "Deactivate SC",
          "MOD CAMGTCFG: LocalCellId=1, CellCaAlgoSwitch=SpectrumCoordinationSwitch-0;",
-         ""),
-        (22, "22", "Both", "FDD/TDD", "Deactivate SC",
-         "MOD CAMGTCFG: LocalCellId=2, CellCaAlgoSwitch=SpectrumCoordinationSwitch-0;",
-         ""),
-        (23, "23", "Both", "FDD/TDD", "Activate enhancement",
+         "Stops UL-SINR PCell swaps. CA stays as configured."),
+        (8, "8", "Both", "FDD/TDD", "Activate enhancement",
          "MOD ENODEBALGOSWITCH: CaAlgoSwitch=HoWithSccCfgSwitch-1;",
-         "Ch.5.4.1.2 Activating LTE spectrum coordination enhancement."),
-        (24, "24", "Both", "FDD/TDD", "Activate enhancement",
-         "MOD CELL: LocalCellId=0, SpecifiedCellFlag=MBBSERCELL;",
-         "Low-frequency cell as MBB service cell."),
-        (25, "25", "Both", "FDD/TDD", "Activate enhancement",
-         "MOD CAMGTCFG: LocalCellId=0, CellCaAlgoSwitch=WbbCaMultiCarrierCoordSw-1;",
-         "Low- and high-frequency cells (doc 0 and 1)."),
-        (26, "26", "Both", "FDD/TDD", "Activate enhancement",
+         "Ch.5 WBB/RRN enhancement. eNodeB-level."),
+        (9, "9", "Both", "FDD/TDD", "Activate enhancement",
+         "MOD CELL: LocalCellId=1, SpecifiedCellFlag=MBBSERCELL;",
+         "Mark the low-frequency cell as MBB service cell."),
+        (10, "10", "Both", "FDD/TDD", "Activate enhancement",
          "MOD CAMGTCFG: LocalCellId=1, CellCaAlgoSwitch=WbbCaMultiCarrierCoordSw-1;",
-         ""),
-        (27, "27", "Both", "FDD/TDD", "Optimize enhancement",
-         "MOD CELLWTTXPARACFG: LocalCellId=0, WbbMultiCarrierCoordA2Ofs=2;",
-         "Doc: Setting WbbMultiCarrierCoordA2Ofs (repeat 0,1)."),
-        (28, "28", "Both", "FDD/TDD", "Optimize enhancement",
+         "Enhancement bit on the participating cell."),
+        (11, "11", "Both", "FDD/TDD", "Optimize enhancement",
          "MOD CELLWTTXPARACFG: LocalCellId=1, WbbMultiCarrierCoordA2Ofs=2;",
-         ""),
-        (29, "29", "Adaptive", "FDD/TDD", "Optimize enhancement",
+         "Doc WBB A2 offset (low-frequency cells)."),
+        (12, "12", "Adaptive", "FDD/TDD", "Optimize enhancement",
          "MOD SCCFREQCFG: PccDlEarfcn=123, SccDlEarfcn=456, SccA2RsrpThldExtendedOfs=-10;",
-         "Doc: low-frequency PCC EARFCN 123, high-frequency WBB SCC EARFCN 456."),
-        (30, "30", "Both", "FDD/TDD", "Deactivate enhancement",
-         "MOD CAMGTCFG: LocalCellId=0, CellCaAlgoSwitch=WbbCaMultiCarrierCoordSw-0;",
-         "Doc deactivation. Repeat LocalCellId=1."),
-        (31, "31", "Both", "FDD/TDD", "Deactivate enhancement",
+         "Doc: low-freq PCC 123 + high-freq WBB SCC 456."),
+        (13, "13", "Both", "FDD/TDD", "Deactivate enhancement",
          "MOD CAMGTCFG: LocalCellId=1, CellCaAlgoSwitch=WbbCaMultiCarrierCoordSw-0;",
-         ""),
+         "Turns off WBB/RRN enhancement only."),
     ]
     for rec in mmls:
         r = add_mml(ws, r, *rec)
@@ -618,4 +564,41 @@ def build_spectrum_coord(wb):
         "Huawei note (Ch.2.1): this FPD is activation guidance. Gains depend on the live scenario; contact Huawei professional service for optimal gains.",
     ])
     ws.row_dimensions[r - 1].height = 110
+
+    # ------------------------------------------------------------------ L  Meeting brief
+    r = section(ws, r, COLS, "L.  Final summary  —  meeting quick notes  (1-minute brief)", fill_hex=GOLD)
+    r = note_bar(ws, r, COLS, "Use this block in a meeting. All points are from the LTE Spectrum Coordination FPD (eRAN21.1 Issue 01).")
+    r = headers(ws, r, ["Topic", "What to say"] + [""] * 8)
+    brief = [
+        ("What it is (10 s)",
+         "LTE Spectrum Coordination is a CA companion: when a CA UE sits at the high-band UL edge, the eNodeB HOs the PCell to a better low-band SCell and keeps the old PCell as SCell, so DL still uses both bands while UL rides the coverage layer. Feature IDs: LCOFD-131312 (FDD) / TDLCOFD-131312 (TDD). Same for FDD and TDD."),
+        ("Benefit (1–2 lines)",
+         "It lifts DL usage of CA UEs at the high-frequency UL coverage edge. Best when high/low gap is large. Scenario 1 (both bands already on): PUSCH MCS 0–3 >10% on high band, low-minus-high UL interference <5 dB, CA UE penetration >25% → network User DL Average Throughput up. Scenario 2 (adding a new low band under an existing high band) → both User DL and User UL Average Throughput up."),
+        ("Trigger",
+         "CA UE already aggregating. UL SINR used in scheduling (initial MCS) < SpectrumCoordSinrThld (doc MML −2 dB). Then a DL SCell must pass A4 AND be stronger than all its intra-freq neighbours, and must be allowed as PCell. Target pick: PCell/PCC priority → largest BW → lowest EARFCN (or DL air-interface capability first if intelligent selection is ON)."),
+        ("Leave / after HO",
+         "After HO, original SCell = new PCell and original PCell = SCell. In adaptive CA, SCell A2 then manages the old high band (SccA2RsrpThldExtendedOfs; doc −10). Operator off: SpectrumCoordinationSwitch-0. Not a coverage HO; extra HOs raise count, can cut DRX UEs and may drop VoLTE MOS."),
+        ("Must-on conditions",
+         "HoAdmitSwitch OFF; HoWithSccCfgSwitch ON; SpectrumCoordinationSwitch ON. After enable also ON: CaEnhancedPreAllocSwitch, Dl2CCAckResShareSw, SccA2RmvSwitch. UE must support CA. CA already live (DL 2–8 CC)."),
+        ("Applicable case",
+         "Multi-band CA cluster with overlapping high + low (FPD example 2600 + 850 MHz). Intra-eNodeB. Macro 3900/5900; TDD also LampSite. Not LBBPc."),
+        ("UL / DL CA limitation",
+         "Compatible with DL 2CC–8CC. Does NOT take effect if the UE has 2 CC in UL and 2 CC in DL (UL SCells are never SC targets). If UL is 2 CC and DL is 3–8 CC, it does take effect. This is not UL CA; it only moves which cell is PCell so UL uses the low band."),
+        ("GPS required?",
+         "No extra GPS requirement in this FPD. SC is an intra-eNodeB PCell change + CA SCell keep. Site sync stays whatever LTE already needs (TDD still needs the site’s existing GPS/1588/sync; SC does not add a GPS license or a new sync feature)."),
+        ("License (if asked)",
+         "FDD LCOFD-131312 model LT1SUNPLTE00 per cell; TDD TDLCOFD-131312 model LT1SLTESPC00 per cell. Enhancement uses the same license. CA licenses still required. License shortage can block ACT CELL."),
+        ("How we know it is working",
+         "L.HHO.InterFreq.ULquality.Prep/Exec/Succ (1526729994 / 9996 / 9998) increase. Also watch CA PCell/SCell users and bits, CA UE DL rate, SCell add success (tied to HO success)."),
+        ("Do not mix / watch-outs",
+         "Not DSS, not GSM/UMTS spectrum sharing, not NR UL/DL decoupling. DSS / SUL DSS cut LTE UL RBs → fewer UEs get SC. NSA: may HO PCC off an NSA anchor — deselect SPCT_COORD_INTER_FREQ_HO_SW to exempt NSA UEs. Enhancement (WBB/RRN) is a different bit (WbbCaMultiCarrierCoordSw); NSA PCC anchoring wins over it. SCC coverage-threshold adaptation kills SC carrier management. More HOs; CQI/KPI move with the new PCell quality."),
+        ("One-line close",
+         "Turn it on only after CA is green on a high/low pair; it does not create CA, it only swaps PCell on poor UL SINR so cell-edge CA UEs keep high-band DL."),
+    ]
+    for i, (topic, text) in enumerate(brief):
+        r = table_row(ws, r, [topic, text] + [""] * 8,
+                      fills=[PALE_GOLD, EXAMPLE if i % 2 == 0 else WHITE] + [WHITE] * 8,
+                      bolds=[True, False] + [False] * 8,
+                      height=min(92, 36 + text.count(" ") // 12))
+        merge(ws, r - 1, 2, r - 1, COLS)
     return ws
