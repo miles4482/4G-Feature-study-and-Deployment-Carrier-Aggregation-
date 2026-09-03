@@ -592,13 +592,17 @@ def build_spectrum_coord(wb):
          "L.HHO.InterFreq.ULquality.Prep/Exec/Succ (1526729994 / 9996 / 9998) increase. Also watch CA PCell/SCell users and bits, CA UE DL rate, SCell add success (tied to HO success)."),
         ("Do not mix / watch-outs",
          "Not DSS, not GSM/UMTS spectrum sharing, not NR UL/DL decoupling. DSS / SUL DSS cut LTE UL RBs → fewer UEs get SC. NSA: may HO PCC off an NSA anchor — deselect SPCT_COORD_INTER_FREQ_HO_SW to exempt NSA UEs. Enhancement (WBB/RRN) is a different bit (WbbCaMultiCarrierCoordSw); NSA PCC anchoring wins over it. SCC coverage-threshold adaptation kills SC carrier management. More HOs; CQI/KPI move with the new PCell quality."),
-        ("One-line close",
-         "Turn it on only after CA is green on a high/low pair; it does not create CA, it only swaps PCell on poor UL SINR so cell-edge CA UEs keep high-band DL."),
+        ("Plain-English close  (read this if the jargon is heavy)",
+         "1) First make normal Carrier Aggregation work between one high-frequency cell and one low-frequency cell (same site, overlapping coverage). If CA is not working, do not turn Spectrum Coordination on.\n"
+         "2) Spectrum Coordination does not join two carriers by itself. CA already joined them. This feature only changes which of those two cells is the PCell (the cell that carries the uplink).\n"
+         "3) When the UE is near the cell edge, uplink on the high band is weak (poor UL SINR). The eNodeB then makes the low-band cell the PCell so the UE transmits uplink on the low band (better coverage).\n"
+         "4) The high-band cell is kept as an SCell, so downlink data can still use both bands. That is the gain: cell-edge users keep high-band download speed even when their upload cannot stay on the high band.\n"
+         "5) Short version: CA = two pipes for download. Spectrum Coordination = move the upload pipe to the low band at the edge, without throwing away the high-band download pipe."),
     ]
     for i, (topic, text) in enumerate(brief):
         r = table_row(ws, r, [topic, text] + [""] * 8,
                       fills=[PALE_GOLD, EXAMPLE if i % 2 == 0 else WHITE] + [WHITE] * 8,
                       bolds=[True, False] + [False] * 8,
-                      height=min(92, 36 + text.count(" ") // 12))
+                      height=max(52, min(168, 28 + 18 * (text.count("\n") + 1))))
         merge(ws, r - 1, 2, r - 1, COLS)
     return ws
