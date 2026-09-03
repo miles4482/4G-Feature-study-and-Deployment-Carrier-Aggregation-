@@ -571,7 +571,17 @@ def build_spectrum_coord(wb):
     r = headers(ws, r, ["Topic", "What to say"] + [""] * 8)
     brief = [
         ("What it is (10 s)",
-         "LTE Spectrum Coordination is a CA companion: when a CA UE sits at the high-band UL edge, the eNodeB HOs the PCell to a better low-band SCell and keeps the old PCell as SCell, so DL still uses both bands while UL rides the coverage layer. Feature IDs: LCOFD-131312 (FDD) / TDLCOFD-131312 (TDD). Same for FDD and TDD."),
+         "The UE is already in CA: PCell = high band (upload + download), SCell = low band (download extra). If upload on the high-band PCell becomes too weak, the eNodeB does an inter-frequency handover: the low-band SCell becomes the new PCell, and the old high-band PCell is immediately kept as an SCell. Feature IDs: LCOFD-131312 (FDD) / TDLCOFD-131312 (TDD). Same for FDD and TDD."),
+        ("Q1. Is the low-band SCell already configured with this PCell?",
+         "YES. The FPD starts from a UE already in the CA state. The eNodeB only looks at that UE’s existing downlink SCells — it does not add a new neighbor from outside CA at this step. Example in Figure 4-1: before the swap, PCell is already 2600 MHz and SCell is already 850 MHz."),
+        ("Q2. If the UE has several SCells, which one becomes the new PCell?",
+         "Only SCells that pass ALL of: (a) better uplink than the current PCell, (b) DL RSRP reaches CA event A4, (c) stronger than all intra-frequency neighbors of that SCell, (d) allowed to be a PCell. If only one SCell passes → HO to that one. If two or more pass → pick by rule: highest PCell/PCC priority, then largest bandwidth, then lowest EARFCN. If intelligent selection is ON, DL air-interface capability is used first, then the same ties. UL SCells are never chosen as the target."),
+        ("What “DL still uses both bands, UL rides the coverage layer” means",
+         "Coverage layer = low frequency (better uplink reach). Capacity layer = high frequency (more downlink speed, weaker uplink at the edge).\n"
+         "In normal LTE CA without UL CA, upload (PUSCH/PUCCH) is only on the PCell. Download can use PCell + SCell.\n"
+         "BEFORE swap: PCell=high band → upload is on high band (often too weak at the edge); download = high + low.\n"
+         "AFTER swap: PCell=low band → upload is on low band (coverage layer, stronger); the high band is still an SCell so download is still high + low.\n"
+         "So download does not lose the high band. Only the upload home cell changes. That is why cell-edge users can keep high-band download while their upload survives."),
         ("Benefit (1–2 lines)",
          "It lifts DL usage of CA UEs at the high-frequency UL coverage edge. Best when high/low gap is large. Scenario 1 (both bands already on): PUSCH MCS 0–3 >10% on high band, low-minus-high UL interference <5 dB, CA UE penetration >25% → network User DL Average Throughput up. Scenario 2 (adding a new low band under an existing high band) → both User DL and User UL Average Throughput up."),
         ("Trigger",
